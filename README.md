@@ -2,9 +2,12 @@
 <img src="images/cvpr_logo.jpg" alt="CVPR Logo" width="250"/>
 
 ## Overview
-This project is developed for the [CVPR MetaFood 2024 Workshop Challenge](https://sites.google.com/view/cvpr-metafood-2024/challenge).
-The goal of our project is to accurately model and analyze food through 3D reconstruction, volume estimation, and mesh reconstruction.
 <img src="images/team_logo.jpg" alt="Team Logo" width="150"/> <img src="images/CVPR_winner_TwitterX.jpg" alt="Workshop Logo" width="200"/>
+
+This project is developed for the [CVPR MetaFood 2024 Workshop Challenge](https://sites.google.com/view/cvpr-metafood-2024/challenge).
+
+The goal of our project is to accurately model and analyze food through 3D reconstruction, volume estimation, and mesh reconstruction.
+
 
 ### Team FoodRiddle
 
