@@ -4,7 +4,7 @@
 This project is developed for the [CVPR MetaFood 2024 Workshop Challenge](https://sites.google.com/view/cvpr-metafood-2024/challenge). The goal of our project is to accurately model and analyze food through 3D reconstruction, volume estimation, and mesh reconstruction.
 
 ### Team Members
-- [Name 1](link to profile)
+- [Yawei Jueluo] https://www.linkedin.com/in/%E9%9B%85%E5%A8%81-%E8%A7%89%E7%BD%97-b80809105
 - [Name 2](link to profile)
 - [Name 3](link to profile)
 
