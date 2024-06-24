@@ -15,7 +15,7 @@ The goal of our project is to accurately model and analyze food through 3D recon
 
 - Yawei Jueluo: jueluoyawei@gmail.com
 - Chengyu Shi: 493525977@qq.com
-- [Name 3](link to profile)
+- Pengyu Wang： wangpengyu@bupt.edu.cn
 
 ### Features
 - **3D Reconstruction**: High-precision 3D reconstruction using state-of-the-art computer vision techniques.
