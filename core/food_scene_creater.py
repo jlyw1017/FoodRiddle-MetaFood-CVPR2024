@@ -1,3 +1,4 @@
+"""This module contains functions that are used to process images."""
 import copy
 import logging
 import os
@@ -13,6 +14,11 @@ logger = logging.getLogger(__name__)
 
 
 def create_obj(meta: SceneData):
+    """Creates a FoodScene object from a SceneData object.
+
+    Args:
+        meta: The SceneData object containing the images and masks.
+    """
     # split image and mask to background and food
     scene = FoodScene(meta)
     if not os.path.exists(meta.food_folder):
@@ -55,7 +61,11 @@ def create_obj(meta: SceneData):
 
 
 def enlarge_roi(scene: FoodScene):
-    """Enlarges the food region in the image."""
+    """Enlarges the food region in the image.
+
+    Args:
+        scene: The FoodScene object containing the images and masks.
+    """
     img = scene.food.img_by_idx[0]
     depth = scene.food.depth_by_idx[0]
     output_folder = os.path.join(scene.meta.obj_root, "enlarged_img")
@@ -63,7 +73,16 @@ def enlarge_roi(scene: FoodScene):
     find_and_enlarge_roi(mask, img, depth, output_folder)
 
 
-def find_and_enlarge_roi(mask, image, depth, output_folder: str):
+def find_and_enlarge_roi(mask: np.ndarray, image: np.ndarray,
+                         depth: np.ndarray, output_folder: str):
+    """Finds the target ROI in an image.
+
+    Args:
+        mask: The binary mask of the target ROI.
+        image: The input image.
+        depth: The depth map of the input image.
+        output_folder: The folder where the enlarged image will be saved.
+    """
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
 
@@ -71,19 +90,19 @@ def find_and_enlarge_roi(mask, image, depth, output_folder: str):
                                    cv2.CHAIN_APPROX_SIMPLE)
 
     if not contours:
-        print("No contours found in the mask.")
+        logger.warning("No contours found in the mask.")
         return
 
-    # 假设我们只对最大的区域感兴趣
+    # Assuming the largest contour is the target ROI.
     c = max(contours, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(c)
 
-    # 计算放大因子
+    # Calculate the scale to keep the aspect ratio of the bounding box.
     scale_width = image.shape[1] / w
     scale_height = image.shape[0] / h
-    scale = min(scale_width, scale_height)  # 保持比例不变
+    scale = min(scale_width, scale_height)
 
-    # 放大边界框内的区域
+    # Enlarge the ROI.
     img_roi = cv2.resize(image[y:y + h, x:x + w],
                          (int(w * scale), int(h * scale)),
                          interpolation=cv2.INTER_LINEAR)
@@ -91,15 +110,14 @@ def find_and_enlarge_roi(mask, image, depth, output_folder: str):
                            (int(w * scale), int(h * scale)),
                            interpolation=cv2.INTER_LINEAR)
 
-    # 创建一个新的空白图像来放置放大后的区域
+    # Create a new image with the same size as the input image.
     output_image = np.zeros_like(image, dtype=image.dtype)
     output_depth_image = np.zeros_like(depth, dtype=image.dtype)
 
-    # 计算放大后区域在新图像中的位置（居中）
     new_x = (image.shape[1] - img_roi.shape[1]) // 2
     new_y = (image.shape[0] - img_roi.shape[0]) // 2
 
-    # 将放大后的区域放置在新图像的中心位置
+    # Puts the enlarged ROI in the center of the new image.
     output_image[new_y:new_y + img_roi.shape[0],
     new_x:new_x + img_roi.shape[1]] = img_roi
     output_depth_image[new_y:new_y + depth_roi.shape[0],
@@ -107,3 +125,4 @@ def find_and_enlarge_roi(mask, image, depth, output_folder: str):
 
     cv2.imwrite(os.path.join(output_folder, "food.png"), output_image)
     cv2.imwrite(os.path.join(output_folder, "depth.png"), output_depth_image)
+
