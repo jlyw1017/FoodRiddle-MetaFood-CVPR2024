@@ -14,8 +14,8 @@ The goal of our project is to accurately model and analyze food through 3D recon
 ### Team Members
 
 - Yawei Jueluo: jueluoyawei@gmail.com
-- [Name 2](link to profile)
-- [Name 3](link to profile)
+- Chengyu Shi: 493525977@qq.com
+- Pengyu Wang： wangpengyu@bupt.edu.cn
 
 ### Features
 - **3D Reconstruction**: High-precision 3D reconstruction using state-of-the-art computer vision techniques.
@@ -44,3 +44,4 @@ Ensure you have the following environment:
 Install all dependencies using the following command:
 ```bash
 pip install -r requirements.txt
+

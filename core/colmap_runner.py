@@ -4,10 +4,17 @@ import subprocess
 from typing import Optional
 
 
+# The resolution of the longest side of the image.
 IMAGE_RESOLUTION_LONG_SIDE = 1920
 
 
 class ColmapProcessor(object):
+    """A helper class to run colmap.
+
+    Attributes:
+        image_root (str): The root directory containing input images.
+        work_space (str): The directory for Colmap workspace.
+    """
     def __init__(self) -> None:
         """Initialize the ColmapProcessor.
 
@@ -19,7 +26,12 @@ class ColmapProcessor(object):
         self.work_space = ""
 
     def run_colmap(self, image_root: str, work_space: str):
-        """Runs colmap for the given data."""
+        """Runs colmap for the given data.
+        
+        Args:
+            image_root (str): The root directory containing input images.
+            work_space (str): The directory for Colmap workspace.
+        """
         self.image_root = image_root
         self.work_space = work_space
         if not os.path.exists(self.work_space):
@@ -29,12 +41,12 @@ class ColmapProcessor(object):
         self.feature_matching()
         self.camera_pose_estimation()
 
-    def feature_extraction(self, camera_params: Optional[str] = None) -> None:
+    def feature_extraction(self, camera_params: Optional[str] = None):
         """Perform feature extraction.
 
         Args:
-            camera_params (str, optional): Camera parameters for known camera model.
-                Format: "focal_length,principal_point_x,principal_point_y".
+            camera_params (str, optional): Camera parameters for known camera
+            model. Format: "focal_length,principal_point_x,principal_point_y".
         """
         # Build the path to the database file and the image directory
         database_path = os.path.join(self.work_space, "database.db")
