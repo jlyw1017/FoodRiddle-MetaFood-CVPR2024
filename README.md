@@ -24,7 +24,8 @@ The goal of our project is to accurately model and analyze food through 3D recon
 
 ## Dataset
 
-We used the [MetaFood 2024 Challenge Dataset](https://sites.google.com/view/cvpr-metafood-2024/challenge) for training and evaluating our models.
+We used the [MetaFood 2024 Challenge Dataset](https://sites.google.com/view/cvpr-metafood-2024/challenge) 
+for training and evaluating our models.
 
 
 ### Data Preparation
@@ -33,6 +34,10 @@ We used the [MetaFood 2024 Challenge Dataset](https://sites.google.com/view/cvpr
     ```bash
     python scripts/preprocess_data.py --input_path /path/to/data --output_path /path/to/preprocessed_data
     ```
+3. Run demo of the postprocess with
+   ```bash
+       python core/mesh_tool.py
+   ```
 
 ## Installation and Dependencies
 ### Environment Setup
@@ -44,4 +49,3 @@ Ensure you have the following environment:
 Install all dependencies using the following command:
 ```bash
 pip install -r requirements.txt
-

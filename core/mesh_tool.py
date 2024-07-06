@@ -1,5 +1,6 @@
 """Tools for working with meshes."""
 import argparse
+import os.path
 from typing import Tuple
 
 import numpy as np
@@ -410,166 +411,13 @@ def get_nearby_color(mesh_with_color, mesh_without_color):
     return mesh_without_color
 
 
-def complete_axisymmetric_pointcloud(mesh, normal_vector, point_on_plane,
-                                     num_points_per_segment=100):
-    """Completes the missing part of an axisymmetric mesh by generating
-     points based on the symmetry.
-
-    Args:
-        mesh (o3d.geometry.TriangleMesh): Input mesh with missing part.
-        missing_angle (float): The angle of the missing part in degrees.
-        num_points_per_segment (int): Number of points to generate in each
-         segment along the missing angle.
-
-    Returns:
-        completed_pointcloud (o3d.geometry.PointCloud): Point cloud with the
-         missing part completed.
-    """
-    # Step 1: Calculate the symmetry axis using PCA
-    vertices = np.asarray(mesh.vertices)
-    pca = PCA(n_components=3)
-    pca.fit(vertices)
-    axis_vector = pca.components_[0]  # Principal axis
-
-    # Step 2: Project vertices onto the principal axis and divide
-    # into segments
-    projections = vertices @ axis_vector
-    min_proj, max_proj = projections.min(), projections.max()
-    segment_length = (max_proj - min_proj) / 20  # Reduce segments to 30
-    segments = [(min_proj + i * segment_length,
-                 min_proj + (i + 1) * segment_length)
-                for i in range(20)]
-
-    new_points, interpolated_points = [], []
-    previous_segment_points = None
-    for i, (seg_start, seg_end) in enumerate(segments):
-        if i == 0 or i == 17 or i == 19:
-            continue
-
-        segment_mask = (projections >= seg_start) & (projections < seg_end)
-        segment_vertices = vertices[segment_mask]
-
-        if len(segment_vertices) == 0:
-            continue
-
-        # Only keep the middle 10% of the segment
-        ratio = 0.4 if i < 16 else 0.2
-        middle_start = seg_start + ratio * segment_length
-        middle_end = seg_end - ratio * segment_length
-        middle_mask = (projections >= middle_start) & (projections < middle_end)
-        middle_segment_vertices = vertices[middle_mask]
-
-        if len(middle_segment_vertices) == 0:
-            continue
-
-        # Step 3: Calculate plane normal vectors
-        origin = np.mean(middle_segment_vertices, axis=0)
-        normal_vector1 = pca.components_[1]
-        normal_vector2 = pca.components_[2]
-
-        # Step 4: Project segment vertices onto the plane perpendicular
-        # to the axis
-        def project_to_plane(v, origin, axis_vector):
-            return v - np.dot(v - origin, axis_vector) * axis_vector
-
-        projected_vertices = np.array([project_to_plane(v, origin, axis_vector)
-                                       for v in middle_segment_vertices])
-        x_coords = np.dot(projected_vertices - origin, normal_vector1)
-        y_coords = np.dot(projected_vertices - origin, normal_vector2)
-
-        # Step 5: Fit an ellipse to the projected points
-        params, is_circle = fit_ellipse_or_circle(x_coords, y_coords)
-
-        # Step 6: Generate new points along the entire ellipse or circle
-        if is_circle:
-            center_x, center_y, radius = params
-            radius += 0.01
-            circle_points = []
-            for theta in np.linspace(0, 2 * np.pi, num_points_per_segment):
-                x = center_x + radius * np.cos(theta)
-                y = center_y + radius * np.sin(theta)
-                new_point = origin + x * normal_vector1 + y * normal_vector2
-                circle_points.append(new_point)
-            new_segment_points = np.array(circle_points)
-        else:
-            a, b, x0, y0, phi = params
-            ellipse_points = []
-            for theta in np.linspace(0, 2 * np.pi, num_points_per_segment):
-                x = (x0 + a * np.cos(theta) * np.cos(phi) -
-                     b * np.sin(theta) * np.sin(phi))
-                y = (y0 + a * np.cos(theta) * np.sin(phi) +
-                     b * np.sin(theta) * np.cos(phi))
-                new_point = origin + x * normal_vector1 + y * normal_vector2
-                ellipse_points.append(new_point)
-            new_segment_points = np.array(ellipse_points)
-
-        # Step 7: Remove points that are close to existing mesh points
-        distances = distance.cdist(new_segment_points, vertices)
-        min_distances = distances.min(axis=1)
-        dis = 0.02
-        if i == 15 or i == 16:
-            dis = 0.03
-
-        new_segment_points = new_segment_points[min_distances > dis]
-        new_segment_points = remove_outliers(new_segment_points, threshold=0.05)
-
-        # Step 8: Interpolate between segments
-        if (previous_segment_points is not None and
-            previous_segment_points.any()):
-            for pt in new_segment_points:
-                closest_prev_idx = np.argmin(
-                    distance.cdist([pt],  previous_segment_points))
-                closest_prev_point = previous_segment_points[closest_prev_idx]
-                interpolated_point = (1 * pt / 5 + 4 * closest_prev_point / 5)
-                interpolated_points.append(interpolated_point)
-                interpolated_point = (2 * pt / 5 + 3 * closest_prev_point / 5)
-                interpolated_points.append(interpolated_point)
-                interpolated_point = (pt + closest_prev_point) / 2
-                interpolated_points.append(interpolated_point)
-                interpolated_point = (3 * pt / 5 + 2 * closest_prev_point / 5)
-                interpolated_points.append(interpolated_point)
-                interpolated_point = (4 * pt / 5 + closest_prev_point / 5)
-                interpolated_points.append(interpolated_point)
-
-        previous_segment_points = new_segment_points
-        new_points.extend(new_segment_points)
-
-        # Visualize the new points generated in the current segment
-        if new_segment_points.size > 0 and False:
-            point_cloud = o3d.geometry.PointCloud()
-            point_cloud.points = o3d.utility.Vector3dVector(new_points)
-            o3d.visualization.draw_geometries([point_cloud, mesh])
-
-    new_points = np.array(new_points)
-    interpolated_points = np.array(interpolated_points)
-    all_points = np.vstack([new_points, interpolated_points])
-    all_points = remove_outliers(all_points, threshold=0.02)
-    # Create the completed point cloud
-    completed_pointcloud = o3d.geometry.PointCloud()
-    completed_pointcloud.points = o3d.utility.Vector3dVector(all_points)
-    completed_pointcloud.estimate_normals(
-        search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.03, max_nn=30))
-
-    ipointcloud = o3d.geometry.PointCloud()
-    ipointcloud.points = o3d.utility.Vector3dVector(interpolated_points)
-
-    projected = project_points_to_plane(all_points, normal_vector,
-                                        point_on_plane)
-    delaunay = Delaunay(projected[:, :2])
-    # reversed_triangles = reverse_triangles(delaunay.simplices)
-    c_mesh = o3d.geometry.TriangleMesh()
-    c_mesh.vertices = o3d.utility.Vector3dVector(all_points)
-    c_mesh.triangles = o3d.utility.Vector3iVector(delaunay.simplices)
-    c_mesh.compute_vertex_normals()
-    c_mesh = remove_triangles_with_large_edges(c_mesh, threshold=0.5)
-    o3d.visualization.draw_geometries([c_mesh, completed_pointcloud, mesh])
-    return mesh + c_mesh,  c_mesh
+FACTOR_BY_IDX = {"1": (0.3, 0.97), "5": (0.7, 0.97)}
 
 
 def complete_mesh_with_plane(mesh: o3d.geometry.TriangleMesh,
                              plane_normal: np.ndarray, plane_point: np.ndarray,
                              min_scale_factor: float, max_scale_factor: float,
-                             use_sample: bool = True):
+                             use_sample: bool = True, debug: bool = False):
     """Completes mesh with the plane.
 
     Args:
@@ -577,6 +425,7 @@ def complete_mesh_with_plane(mesh: o3d.geometry.TriangleMesh,
         plane_normal (np.ndarray): the normal of the plane.
         plane_point (np.ndarray): a point of the plane.
         use_sample (bool): whether to use sampled.
+        debug (bool): weather to show visual result.
     """
     if use_sample:
         pcd = mesh.sample_points_uniformly(number_of_points=1000)
@@ -627,26 +476,26 @@ def complete_mesh_with_plane(mesh: o3d.geometry.TriangleMesh,
     plane_mesh.compute_vertex_normals()
 
     combined_mesh = mesh + plane_mesh
-    o3d.visualization.draw_geometries([mesh, point_cloud])
+    if debug:
+        o3d.visualization.draw_geometries([mesh, point_cloud])
     return combined_mesh, plane_mesh
 
 
 def get_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-i', '--index', type=str,
-                        default='../data/1.obj')
     parser.add_argument('-m', '--mesh', type=str,
-                        default='../data/1.obj')
+                        default='../demo_data/1/1.obj')
     parser.add_argument('-p', '--pts', type=str,
-                        default='../data/1/sparse/0/points3D.bin')
+                        default='../demo_data/1/points3D.bin')
     parser.add_argument('-o', '--output', type=str,
-                        default='../data/output.obj')
+                        default='../demo_data/output.obj')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = get_parser()
-    mesh = o3d.io.read_triangle_mesh(args.input)
+    reconstructed_mesh = o3d.io.read_triangle_mesh(args.mesh)
+    index = os.path.splitext(os.path.split(args.mesh)[1])[0]
 
     pts = read_points3D_binary(args.pts)
     pt_coords = []
@@ -655,16 +504,15 @@ if __name__ == '__main__':
     pt_coords = np.array(pt_coords)
 
     normal_vector, point_on_plane = extract_plane(
-        pt_coords, args.index in FOOD_WITH_PLATE)
+        pt_coords, index in FOOD_WITH_PLATE)
 
-    MIN_SCALE_FACTOR = 0.3
-    MAX_SCALE_FACTOR = 0.95
+    MIN_SCALE_FACTOR, MAX_SCALE_FACTOR = FACTOR_BY_IDX[index]
     mesh, plane_mesh = complete_mesh_with_plane(
-        mesh, normal_vector, point_on_plane[0], MIN_SCALE_FACTOR, MAX_SCALE_FACTOR)
+        reconstructed_mesh, normal_vector, point_on_plane[0], MIN_SCALE_FACTOR, MAX_SCALE_FACTOR)
     complement_pcd = plane_mesh.sample_points_poisson_disk(
         number_of_points=10000)
 
     mesh_poisson = poisson_reconstruction_with_plane(
         mesh, complement_pcd, args.output)
-    mesh_poisson = get_nearby_color(mesh, mesh_poisson)
-    o3d.visualization.draw_geometries([mesh, mesh_poisson])
+    mesh_poisson = get_nearby_color(reconstructed_mesh, mesh_poisson)
+    o3d.visualization.draw_geometries([mesh_poisson])
