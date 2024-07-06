@@ -13,9 +13,9 @@ The goal of our project is to accurately model and analyze food through 3D recon
 
 ### Team Members
 
-- Yawei Jueluo: jueluoyawei@gmail.com
-- Chengyu Shi: 493525977@qq.com
-- Pengyu Wang： wangpengyu@bupt.edu.cn
+- Yawei Jueluo:  jueluoyawei@gmail.com
+- Chengyu Shi:  493525977@qq.com
+- Pengyu Wang:  wangpengyu@bupt.edu.cn
 
 ### Features
 - **3D Reconstruction**: High-precision 3D reconstruction using state-of-the-art computer vision techniques.
@@ -30,13 +30,14 @@ for training and evaluating our models.
 
 ### Data Preparation
 1. Download the dataset from the provided link.
-2. Preprocess the data using the provided scripts:
+2. Preprocess the data and run SFM using the provided scripts:
     ```bash
-    python scripts/preprocess_data.py --input_path /path/to/data --output_path /path/to/preprocessed_data
+    python core/sfm_pipeline.py --dataset_root /path/to/data
     ```
-3. Run demo of the postprocess with
+3. Run 2D gaussian splatting with result
+4. Run demo of the postprocess with
    ```bash
-       python core/mesh_tool.py
+   python core/mesh_tool.py
    ```
 
 ## Installation and Dependencies

@@ -7,7 +7,6 @@ import numpy as np
 import open3d as o3d
 from scipy.spatial import ConvexHull, Delaunay, KDTree, Voronoi, cKDTree, distance
 from scipy.optimize import least_squares
-from sklearn.decomposition import PCA
 from sklearn.linear_model import RANSACRegressor
 
 from data_utils.colmap_reader import read_points3D_binary

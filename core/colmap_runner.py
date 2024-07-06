@@ -25,7 +25,7 @@ class ColmapProcessor(object):
         self.image_root = ""
         self.work_space = ""
 
-    def run_colmap(self, image_root: str, work_space: str):
+    def run_colmap(self, image_root: str, work_space: str, use_extern_features: bool = False):
         """Runs colmap for the given data.
         
         Args:
@@ -37,8 +37,9 @@ class ColmapProcessor(object):
         if not os.path.exists(self.work_space):
             os.mkdir(self.work_space)
 
-        self.feature_extraction()
-        self.feature_matching()
+        if not use_extern_features:
+            self.feature_extraction()
+            self.feature_matching()
         self.camera_pose_estimation()
 
     def feature_extraction(self, camera_params: Optional[str] = None):
