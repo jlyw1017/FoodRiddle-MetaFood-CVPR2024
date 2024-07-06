@@ -4,3 +4,6 @@
 [submodule "submodule/2d-gaussian-splatting"]
 	path = submodule/2d-gaussian-splatting
 	url = https://github.com/hbb1/2d-gaussian-splatting.git
+[submodule "submodule/InstantMesh"]
+	path = submodule/InstantMesh
+	url = https://github.com/TencentARC/InstantMesh
