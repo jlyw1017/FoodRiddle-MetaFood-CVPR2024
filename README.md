@@ -35,9 +35,13 @@ for training and evaluating our models.
     python core/sfm_pipeline.py --dataset_root /path/to/data
     ```
 3. Run 2D gaussian splatting with result
-4. Run demo of the postprocess with
+4. Run demo to see the final results with
    ```bash
    python core/mesh_tool.py
+   ```
+   and 
+   ```bash
+   python core/post_process.py
    ```
 
 ## Installation and Dependencies
